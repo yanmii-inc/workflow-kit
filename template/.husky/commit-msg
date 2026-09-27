@@ -1,0 +1,87 @@
+#!/bin/sh
+
+# ── PROJECT CONFIG — edit these regexes for your stack ────────────────────────
+# File extensions that count as "code" (subject to the test-coverage rule):
+CODE_EXT_RE='\.(go|dart|ts|tsx|js|jsx|py|rs|kt|swift|java|php|rb)$'
+# File extensions/naming that count as a "test file":
+TEST_FILE_RE='(_test\.(go|dart|py)|\.test\.(ts|js|tsx|jsx)|\.spec\.(ts|js|tsx|jsx)|/tests?/.*\.(py|rs)$)'
+# Where your code lives (used only to display staged files in the hint):
+CODE_PATH_RE='^(apps|packages|src|lib|services)/'
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── 1. Conventional Commits format ───────────────────────────────────────────
+pnpm exec commitlint --edit "$1"
+
+# ── 2. Type gate — only behavioral types carry further obligations ─────────────
+# feat | fix | perf   → behavioral → check footers + tests
+# everything else     → exempt
+TYPE=$(head -1 "$1" | sed -n 's/^\([a-z]*\).*/\1/p')
+
+case "$TYPE" in
+  feat|fix|perf) ;;
+  *) exit 0 ;;
+esac
+
+COMMIT_MSG=$(cat "$1")
+
+# ── 3. Traceability footers ───────────────────────────────────────────────────
+if ! printf '%s' "$COMMIT_MSG" | grep -qE '^(Implements|See|Closes|Refs):'; then
+  STAGED=$(git diff --cached --name-only | grep -E "$CODE_PATH_RE" || true)
+  echo ""
+  echo "┌─────────────────────────────────────────────────────────────────┐"
+  echo "│  {{PROJECT_ID_UPPER}}: '$TYPE' commit is missing traceability footers        │"
+  echo "└─────────────────────────────────────────────────────────────────┘"
+  echo ""
+  if [ -n "$STAGED" ]; then
+    printf '%s\n' "$STAGED" | head -5 | sed 's/^/    /'
+    EXTRA=$(printf '%s\n' "$STAGED" | wc -l | tr -d ' ')
+    [ "$EXTRA" -gt 5 ] && echo "    ... and $((EXTRA - 5)) more"
+    echo ""
+  fi
+  echo "  A '$TYPE' commit must include at least one:"
+  echo "    Implements: REQ-XX-NNN     — product requirement (PRD.md)"
+  echo "    Implements: REQ-INFRA-NNN  — infra requirement (docs/infra/REQUIREMENTS.md)"
+  echo "    See: ADR-NNN               — architecture decision"
+  echo "    Closes: #NNN / Refs: #NNN  — GitHub issue / task"
+  echo ""
+  echo "  → Run /reconcile in Claude Code to back-fill docs and get the footers."
+  echo "  → Genuinely no requirement (rare)? Bypass: git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+# ── 4. Test file coverage ─────────────────────────────────────────────────────
+# feat must ship with tests; fix/perf warns if none staged.
+STAGED_CODE=$(git diff --cached --name-only \
+  | grep -E "$CODE_EXT_RE" \
+  | grep -vE "$TEST_FILE_RE" || true)
+
+STAGED_TESTS=$(git diff --cached --name-only | grep -E "$TEST_FILE_RE" || true)
+
+if [ -n "$STAGED_CODE" ] && [ -z "$STAGED_TESTS" ]; then
+  case "$TYPE" in
+    feat)
+      echo ""
+      echo "┌─────────────────────────────────────────────────────────────────┐"
+      echo "│  {{PROJECT_ID_UPPER}}: 'feat' commit has no test files staged                │"
+      echo "└─────────────────────────────────────────────────────────────────┘"
+      echo ""
+      echo "  Every new feature must ship with tests (Global Principle 1)."
+      echo "  No test files found matching the project test patterns."
+      echo ""
+      echo "  → Add tests covering the ACs in the task, then re-commit."
+      echo "  → Not testable yet (stub/scaffold only)? Bypass: git commit --no-verify"
+      echo ""
+      exit 1
+      ;;
+    fix|perf)
+      echo ""
+      echo "  ⚠  {{PROJECT_ID_UPPER}}: '$TYPE' commit has no test files staged."
+      echo "     Verify existing tests still pass and adjust any that changed."
+      echo "     Test commands per area: see docs/PROJECT-MAP.md"
+      echo "     To suppress this warning: git commit --no-verify"
+      echo ""
+      # warning only — do not exit 1
+      ;;
+  esac
+fi

@@ -1,0 +1,43 @@
+#!/bin/sh
+# pre-push hook — runs slightly heavier checks before pushing.
+# These catch issues that are too slow for pre-commit but still
+# much faster than waiting for CI.
+#
+# To bypass: git push --no-verify
+
+REMOTE=$1
+
+# ── PROJECT CONFIG — one gate per fast-enough test suite ─────────────────────
+TEST_DIR="apps/api"
+TEST_CMD="go test ./..."
+
+LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+echo "🚀 pre-push: checking $TEST_DIR tests before push to $REMOTE…"
+
+# Check if any files in TEST_DIR differ between local HEAD and remote tracking branch
+REMOTE_REF="refs/remotes/${REMOTE}/${LOCAL_BRANCH}"
+if git rev-parse --verify "$REMOTE_REF" >/dev/null 2>&1; then
+  CHANGED=$(git diff --name-only "$(git merge-base HEAD "$REMOTE_REF")" HEAD | grep -c "^${TEST_DIR}/" || true)
+else
+  # No remote tracking branch yet (first push) — run tests unconditionally
+  CHANGED=1
+fi
+
+if [ "$CHANGED" -gt 0 ]; then
+  echo "  → Files changed in ${TEST_DIR}, running: $TEST_CMD"
+  (cd "$TEST_DIR" && $TEST_CMD) || {
+    echo ""
+    echo "┌─────────────────────────────────────────────────────────────────┐"
+    echo "│  {{PROJECT_ID_UPPER}}: tests failed — push blocked                 │"
+    echo "└─────────────────────────────────────────────────────────────────┘"
+    echo ""
+    echo "  Fix the failing tests before pushing, or bypass with:"
+    echo "    git push --no-verify"
+    echo ""
+    exit 1
+  }
+  echo "  ✓ All tests pass."
+else
+  echo "  → No changes detected in ${TEST_DIR}, skipping tests."
+fi

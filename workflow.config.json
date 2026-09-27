@@ -1,0 +1,9 @@
+{
+  "name": "My Project",
+  "description": "",
+  "scopes": [
+    { "name": "infra", "path": "docker/, .github/, scripts/", "notes": "Build, deploy, CI/CD" },
+    { "name": "docs", "path": "docs/", "notes": "Documentation" },
+    { "name": "workspace", "path": "root config files", "notes": "Tooling, workspace config" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Lokalaku",
+  "id": "lokalaku",
+  "description": "An open-source, decentralized platform giving communities full control over their local economy — five purpose-built apps sharing a single high-performance API core (Go + Flutter + Astro monorepo).",
+  "scopes": [
+    { "name": "api", "path": "apps/api", "notes": "Golang API — endpoints, middleware, DB schema" },
+    { "name": "consumer", "path": "apps/consumer_app", "notes": "Flutter — villager app (Android + PWA)" },
+    { "name": "merchant", "path": "apps/merchant_app", "notes": "Flutter — warung POS (Android tablet + phone)" },
+    { "name": "courier", "path": "apps/courier_app", "notes": "Flutter — delivery app (Android phone)" },
+    { "name": "wholesale", "path": "apps/wholesaler_app", "notes": "Flutter — wholesaler dashboard (Desktop + Web)" },
+    { "name": "backoffice", "path": "apps/backoffice_web", "notes": "Flutter — superadmin web panel" },
+    { "name": "website", "path": "apps/website", "notes": "Astro — public SEO site" },
+    { "name": "domain", "path": "packages/flutter/domain", "notes": "Pure Dart entities, repo interfaces" },
+    { "name": "data", "path": "packages/flutter/data", "notes": "Repository implementations" },
+    { "name": "core-auth", "path": "packages/flutter/core_auth", "notes": "Token lifecycle, refresh timer" },
+    { "name": "core-network", "path": "packages/flutter/core_network", "notes": "HTTP client, interceptors, error models" },
+    { "name": "ui-kit", "path": "packages/flutter/ui_kit", "notes": "Design tokens, shared widgets" },
+    { "name": "utils", "path": "packages/flutter/utils", "notes": "Formatters, validators, extensions" },
+    { "name": "infra", "path": "docker/, compose.yaml, scripts/", "notes": "Docker, deployment, shell scripts" },
+    { "name": "docs", "path": "docs/", "notes": "Design docs, ADRs, milestones, tasks, glossary" },
+    { "name": "workspace", "path": "root config", "notes": "Moon, pnpm, biome, root AGENTS.md" }
+  ]
+}
