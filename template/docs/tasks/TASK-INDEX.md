@@ -3,6 +3,7 @@
 > **For agents:** Read this when planning work, decomposing PRD requirements into tasks,  
 > or checking what is already in progress. Use `TASK-TEMPLATE.md` to create new task files.  
 > Run `python3 scripts/gh_create_issues.py` to sync unlinked tasks to GitHub Issues.  
+> **Task Pickup:** When told to pick up or start execution on any task(s), immediately mark the row status to `🔄` and update the task file frontmatter to `status: in-progress`.  
 > **Routing tier:** 5 (task planning and work breakdown).
 
 ---

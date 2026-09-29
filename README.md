@@ -10,12 +10,20 @@ without touching the files your project has customized.
 ## Install into a project
 
 ```bash
-# from a clone of this repo
-node /path/to/workflow-kit/install.mjs /path/to/project --config examples/lokalaku.config.json
+# inside the target project — fetch the kit and run it (no clone kept behind)
+npx degit yanmii-inc/workflow-kit /tmp/workflow-kit
+node /tmp/workflow-kit/install.mjs --config workflow.config.json --dry-run   # preview
+node /tmp/workflow-kit/install.mjs --config workflow.config.json             # install
 
-# or dry-run first
-node install.mjs /path/to/project --config my.config.json --dry-run
+# no config yet? quick start with folder-name defaults:
+node /tmp/workflow-kit/install.mjs
+
+# or from a local clone of this repo
+node /path/to/workflow-kit/install.mjs /path/to/project --config examples/lokalaku.config.json
 ```
+
+Updating later is the same two lines — refetch the kit and re-run. Managed
+files refresh; your seeded, customized files are left alone.
 
 Without `--config`, the installer assumes the target folder name as project name
 and a minimal default scope set. Copy `workflow.config.json`, fill it in, and

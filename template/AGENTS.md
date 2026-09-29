@@ -15,6 +15,10 @@ To ensure architectural consistency, reduce code debt, and prevent cross-framewo
 1. **Behavioral Test Coverage:** Every new feature (`feat`) must ship with tests that cover its acceptance criteria. Changes to existing features or refactors must verify that existing tests still pass and adjust them to reflect the new behaviour. No `feat` commit is done without test files. No `fix`/`refactor` is done without running the test suite.
 2. **Traceability:** Every behavioral change (`feat`/`fix`/`perf`) traces back to a requirement, an ADR, or an issue — enforced by commit footers and CI.
 3. **Documentation as a byproduct:** Decisions are recorded where the next agent will find them (ADRs, milestones, tasks) — see the Document Map below.
+4. **Task State Lifecycle (In-Progress on Pickup):** When told to pick up a task or multiple tasks from `docs/tasks/TASK-INDEX.md` and starting execution, the agent MUST immediately mark those tasks as `in-progress`:
+   - In `docs/tasks/TASK-INDEX.md`: Change the status column from `📋` (or current status) to `🔄`.
+   - In the task file (`docs/tasks/<domain>/TASK-*.md`): Update the YAML frontmatter `status` field to `in-progress`.
+   - If working in a per-task worktree or branch (per `docs/WORKTREE_WORKFLOW.md`), make these changes in that branch as part of task execution.
 
 <!-- PROJECT: add your product-level principles here (e.g. offline-first, zero
      vendor lock-in, efficiency targets). Derive them from PRD.md / docs/WHY.md
@@ -68,6 +72,8 @@ You are implementing something new within a known scope, or picking up a defined
 - New endpoint, new DB table, new screen tied to a PRD requirement
 - Implementing a feature from a task in `docs/tasks/`
 
+> **Task Pickup Requirement:** When starting execution on one or more tasks from `docs/tasks/TASK-INDEX.md`, immediately mark them as in-progress (`status: in-progress` in frontmatter and `🔄` in `docs/tasks/TASK-INDEX.md`) before writing implementation code.
+
 | Working in | Read these files |
 |:---|:---|
 | Any app/package with its own `PRD.md` | that `PRD.md` + `docs/design/NN-<feature>.md` (if exists) |
@@ -109,13 +115,14 @@ You need to understand why something was designed a certain way before extending
 
 ---
 
-### Tier 5 — Task planning: read task index + templates
+### Tier 5 — Task planning & lifecycle: read task index + templates
 
-You are decomposing PRD requirements into tasks, reviewing what work exists, or generating GitHub Issues:
+You are decomposing PRD requirements into tasks, reviewing what work exists, picking up tasks, or generating GitHub Issues:
 
 | Action | Do this |
 |:---|:---|
 | Review all tasks and their status | Read `docs/tasks/TASK-INDEX.md` |
+| Pick up / start one or more tasks | Mark `🔄` in `docs/tasks/TASK-INDEX.md` + set `status: in-progress` in task frontmatter (or invoke `pickup-task` skill) |
 | Create a new task file | Copy `docs/tasks/TASK-TEMPLATE.md` (or invoke the `write-task` skill) |
 | Push unlinked tasks to GitHub Issues | Run `python3 scripts/gh_create_issues.py --dry-run` first, then without `--dry-run` |
 
@@ -128,6 +135,7 @@ They are available in multiple IDEs (Zed, Claude Code, and others with custom pr
 
 | Skill | Trigger phrases | What it does |
 |:---|:---|:---|
+| `pickup-task` | "pickup task", "pick up TASK-...", "start working on TASK-...", "take on task" | Marks task(s) as in-progress in TASK-INDEX.md (🔄) and sets status: in-progress in frontmatter before executing |
 | `write-adr` | "write an ADR for X", "document why we chose Y", "record this decision" | Reads the template, numbers the next ADR, creates the file, links it to the active milestone |
 | `write-task` | "create a task for X", "break down REQ-XX", "add a work item" | Reads TASK-INDEX + template, creates the task file, updates the index row |
 | `record-milestone` | "update the milestone", "mark M00X as done", "checkpoint our progress" | Updates the milestone doc + CHANGELOG.md with decisions, deferred work, and lessons learned |

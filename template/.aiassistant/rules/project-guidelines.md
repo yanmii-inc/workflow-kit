@@ -36,6 +36,7 @@ Making decisions affecting multiple apps, data models, or platform patterns? Rea
 1. **Test Coverage**: Every `feat` requires tests covering acceptance criteria; `fix`/`refactor` requires verifying existing tests pass.
 2. **Traceability**: Every behavioral change traces to a requirement, ADR, or issue via commit footers.
 3. **Documentation as a byproduct**: Decisions are recorded in ADRs, milestones, and tasks.
+4. **Task State Lifecycle (In-Progress on Pickup)**: When instructed to pick up one or more tasks from `docs/tasks/TASK-INDEX.md` and start execution, immediately mark them as in-progress (set status to `🔄` in `docs/tasks/TASK-INDEX.md` and `status: in-progress` in each task's YAML frontmatter).
 
 <!-- PROJECT: add your product-level principles (offline-first, vendor
      independence, performance targets...) mirroring AGENTS.md. -->
@@ -68,6 +69,7 @@ From repository root (see `docs/PROJECT-MAP.md` for the full table):
 
 The project includes reusable workflows for AI agents:
 
+- `pickup-task` — Mark tasks in-progress when starting execution
 - `write-adr` — Document architectural decisions
 - `write-task` — Create and track tasks
 - `record-milestone` — Update milestone documentation

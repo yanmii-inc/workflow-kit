@@ -1,3 +1,14 @@
+# {{PROJECT_NAME}} — Gemini & Antigravity rules
+
+@AGENTS.md
+
+## Core Workflow Rules
+
+- **Task Pickup Lifecycle**: Whenever told to pick up a task or multiple tasks from `docs/tasks/TASK-INDEX.md` and start execution, immediately mark those tasks as in-progress:
+  1. Update the status column in `docs/tasks/TASK-INDEX.md` to `🔄`.
+  2. Update the YAML frontmatter in each corresponding task file (`docs/tasks/<domain>/TASK-*.md`) to `status: in-progress`.
+  3. Ensure these status changes are included in your active task branch or worktree.
+
 <!-- graft:start -->
 ## Graft — repo context graph
 
