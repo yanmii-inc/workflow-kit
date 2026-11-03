@@ -7,9 +7,15 @@
  *
  * Options:
  *   --config <file>   Workflow config JSON (default: ./workflow.config.json)
+ *   --name <name>     Project display name (inline, wins over config file)
+ *   --id <slug>       Project slug (default: slugified name)
+ *   --description <t> One-liner injected into AGENTS.md
+ *   --scope <n=p[:notes]>  Repeatable, e.g. --scope api=apps/api:Backend API
  *   --force           Also overwrite "seed" files that already exist (destroys project edits!)
  *   --check           Report installed version / drift; change nothing
  *   --dry-run         Print planned actions without writing
+ *
+ * Precedence: inline flags > config file > folder-name defaults.
  *
  * File classes:
  *   managed — workflow-canonical; overwritten on every install/update
@@ -31,17 +37,26 @@ const MANIFEST_NAME = ".workflow-kit.json";
 // ── args ─────────────────────────────────────────────────────────────────────
 
 const argv = process.argv.slice(2);
+const VALUE_FLAGS = ["--config", "--name", "--id", "--description", "--scope"];
 const flags = new Set(argv.filter((a) => a.startsWith("--")));
 const flagValue = (name) => {
   const i = argv.indexOf(name);
   return i >= 0 ? argv[i + 1] : undefined;
+};
+const flagValues = (name) => {
+  const out = [];
+  argv.forEach((a, i) => {
+    if (a === name && argv[i + 1] !== undefined) out.push(argv[i + 1]);
+  });
+  return out;
 };
 if (flags.has("--help") || flags.has("-h")) {
   console.log(readFileSync(import.meta.url.replace("file://", ""), "utf8").split("*/")[0] + "*/");
   process.exit(0);
 }
 
-const targetArg = argv.find((a) => !a.startsWith("--") && a !== flagValue("--config"));
+// positional target = first arg that is neither a flag nor the value of one
+const targetArg = argv.find((a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(argv[i - 1]));
 const target = resolve(targetArg || process.cwd());
 const configPath = resolve(flagValue("--config") || join(target, "workflow.config.json") || "workflow.config.json");
 const DRY = flags.has("--dry-run");
@@ -55,6 +70,23 @@ if (!existsSync(TEMPLATE_DIR)) {
 
 // ── config ───────────────────────────────────────────────────────────────────
 
+/** --scope api=apps/api:Backend API → { name, path, notes } */
+function parseScope(raw) {
+  const eq = raw.indexOf("=");
+  if (eq < 1) {
+    console.error(`✗ --scope expects name=path[:notes], got: ${raw}`);
+    process.exit(1);
+  }
+  const name = raw.slice(0, eq).trim();
+  const rest = raw.slice(eq + 1);
+  const colon = rest.indexOf(":");
+  return {
+    name,
+    path: (colon < 0 ? rest : rest.slice(0, colon)).trim(),
+    notes: colon < 0 ? "" : rest.slice(colon + 1).trim(),
+  };
+}
+
 function loadConfig() {
   const fallback = {
     name: basename(target),
@@ -66,21 +98,28 @@ function loadConfig() {
       { name: "workspace", path: "root config files", notes: "Tooling, workspace config" },
     ],
   };
-  if (!existsSync(configPath)) {
-    if (flags.has("--config")) {
-      console.error(`✗ config not found: ${configPath}`);
-      process.exit(1);
-    }
-    console.log(`ℹ no workflow.config.json — using defaults (name: ${fallback.name})`);
-    return fallback;
-  }
-  const cfg = JSON.parse(readFileSync(configPath, "utf8"));
-  return {
-    name: cfg.name || fallback.name,
-    id: cfg.id || slug(cfg.name || fallback.name),
-    description: cfg.description || "",
-    scopes: cfg.scopes?.length ? cfg.scopes : fallback.scopes,
+  const inline = {
+    name: flagValue("--name"),
+    id: flagValue("--id"),
+    description: flagValue("--description"),
+    scopes: flags.has("--scope") ? flagValues("--scope").map(parseScope) : undefined,
   };
+  let file = null;
+  if (existsSync(configPath)) {
+    file = JSON.parse(readFileSync(configPath, "utf8"));
+  } else if (flags.has("--config")) {
+    console.error(`✗ config not found: ${configPath}`);
+    process.exit(1);
+  } else {
+    console.log(`ℹ no workflow.config.json — using defaults (name: ${inline.name || fallback.name})`);
+  }
+  const merged = {
+    name: inline.name || file?.name || fallback.name,
+    id: inline.id || file?.id || slug(inline.name || file?.name || fallback.name),
+    description: inline.description ?? file?.description ?? "",
+    scopes: inline.scopes?.length ? inline.scopes : file?.scopes?.length ? file.scopes : fallback.scopes,
+  };
+  return merged;
 }
 
 function slug(s) {

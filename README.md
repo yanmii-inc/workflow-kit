@@ -7,29 +7,59 @@ JetBrains AI / Zed, graft wiring, and CI-grade enforcement hooks.
 One command installs it into a project. Re-running the command updates it —
 without touching the files your project has customized.
 
-## Install into a project
+## Install into a project — one command
+
+Inside the target project:
 
 ```bash
-# inside the target project — fetch the kit and run it (no clone kept behind)
-npx degit yanmii-inc/workflow-kit /tmp/workflow-kit
-node /tmp/workflow-kit/install.mjs --config workflow.config.json --dry-run   # preview
-node /tmp/workflow-kit/install.mjs --config workflow.config.json             # install
+curl -fsSL https://raw.githubusercontent.com/yanmii-inc/workflow-kit/main/bootstrap.sh | bash
+```
 
-# no config yet? quick start with folder-name defaults:
-node /tmp/workflow-kit/install.mjs
+That's the whole install. The script fetches the kit to a temp dir (nothing kept
+behind), runs the installer, installs commitlint + husky (auto-detects
+pnpm/npm/yarn/bun from the lockfile), and sets `git config commit.template
+.gitmessage`. Then it prints the short list of project decisions left to fill by
+hand.
+
+Pin to a release instead of `main` (recommended for CI/repeatability):
+
+```bash
+curl -fsSL .../main/bootstrap.sh | bash -s -- --ref v1.1.0
+```
+
+Customize without a config file — inline flags:
+
+```bash
+curl -fsSL .../main/bootstrap.sh | bash -s -- \
+  --name "Lokalaku" \
+  --description "One-liner product description" \
+  --scope api=apps/api:Backend --scope web=apps/web:Frontend
+```
+
+Options: `--dir <path>` · `--name` · `--id` · `--description` ·
+`--scope <n=p[:notes]>` (repeatable) · `--pm <pnpm|npm|yarn|bun>` ·
+`--no-deps` · `--dry-run` · `--ref`. Inline flags win over a
+`workflow.config.json` in the target dir; run `bash -s -- --help` for details.
+
+## Manual install (fallback)
+
+```bash
+# fetch the kit and run it (no clone kept behind)
+npx degit yanmii-inc/workflow-kit /tmp/workflow-kit
+node /tmp/workflow-kit/install.mjs --dry-run                          # preview
+node /tmp/workflow-kit/install.mjs --name "My App" --scope api=apps/api  # inline
+node /tmp/workflow-kit/install.mjs --config workflow.config.json      # via config file
 
 # or from a local clone of this repo
 node /path/to/workflow-kit/install.mjs /path/to/project --config examples/lokalaku.config.json
 ```
 
-Updating later is the same two lines — refetch the kit and re-run. Managed
+Updating later is the same command — refetch the kit and re-run. Managed
 files refresh; your seeded, customized files are left alone.
 
-Without `--config`, the installer assumes the target folder name as project name
-and a minimal default scope set. Copy `workflow.config.json`, fill it in, and
-pass it via `--config` (the file is looked up in the target dir too).
-
-Config schema:
+Without any config, the installer assumes the target folder name as project
+name and a minimal default scope set. Precedence: **inline flags > config
+file > folder-name defaults**. Config schema:
 
 ```jsonc
 {
@@ -43,6 +73,15 @@ Config schema:
 ```
 
 ## Update an existing install
+
+Re-running the one-liner updates in place (managed files refresh, seed files
+untouched):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yanmii-inc/workflow-kit/main/bootstrap.sh | bash
+```
+
+Or from a clone:
 
 ```bash
 node install.mjs /path/to/project --config my.config.json   # re-run anytime
